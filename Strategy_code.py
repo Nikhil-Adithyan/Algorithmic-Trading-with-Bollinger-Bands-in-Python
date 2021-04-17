@@ -39,7 +39,7 @@ def get_historic_data(symbol):
 tsla = get_historic_data('TSLA')
 tsla = tsla.set_index('date')
 tsla = tsla[tsla.index >= '2020-01-01']
-tsla.to_csv('tsla.csv)
+tsla.to_csv('tsla.csv')
 
 tsla = pd.read_csv('tsla.csv').set_index('date')
 tsla.index = pd.to_datetime(tsla.index)
