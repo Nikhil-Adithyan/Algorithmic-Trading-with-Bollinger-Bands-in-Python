@@ -200,4 +200,4 @@ total_benchmark_investment_ret = round(sum(benchmark['investment_returns']), 2)
 benchmark_profit_percentage = math.floor((total_benchmark_investment_ret/investment_value)*100)
 print(cl('Benchmark profit by investing $100k : {}'.format(total_benchmark_investment_ret), attrs = ['bold']))
 print(cl('Benchmark Profit percentage : {}%'.format(benchmark_profit_percentage), attrs = ['bold']))
-
+print(cl('BB Strategy profit is {}% higher than the Benchmark Profit'.format(profit_percentage - benchmark_profit_percentage), attrs = ['bold']))
