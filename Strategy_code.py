@@ -36,13 +36,9 @@ def get_historic_data(symbol):
     df = pd.concat(frames, axis = 1, join = 'inner')
     return df
 
-tsla = get_historic_data('TSLA')
-tsla = tsla.set_index('date')
-tsla = tsla[tsla.index >= '2020-01-01']
-tsla.to_csv('tsla.csv')
-
 tsla = pd.read_csv('tsla.csv').set_index('date')
 tsla.index = pd.to_datetime(tsla.index)
+print(tsla.tail())
 
 plt.plot(tsla.index, tsla['close'])
 plt.xlabel('Date')
@@ -55,6 +51,8 @@ def sma(data, window):
     return sma
 
 tsla['sma_20'] = sma(tsla['close'], 20)
+print(tsla.tail())
+
 tsla['close'].plot(label = 'CLOSE', alpha = 0.6)
 tsla['sma_20'].plot(label = 'SMA 20', linewidth = 2)
 plt.xlabel('Date')
@@ -65,15 +63,15 @@ plt.show()
 def bb(data, sma, window):
     std = data.rolling(window = window).std()
     upper_bb = sma + std * 2
-    middle_bb = sma
     lower_bb = sma - std * 2
-    return upper_bb, middle_bb, lower_bb
+    return upper_bb, lower_bb
 
-tsla['upper_bb'], tsla['middle_bb'], tsla['lower_bb'] = bb(tsla['close'], tsla['sma_20'], 20)
+tsla['upper_bb'], tsla['lower_bb'] = bb(tsla['close'], tsla['sma_20'], 20)
+print(tsla.tail())
 
 tsla['close'].plot(label = 'CLOSE PRICES', color = 'skyblue')
 tsla['upper_bb'].plot(label = 'UPPER BB 20', linestyle = '--', linewidth = 1, color = 'black')
-tsla['middle_bb'].plot(label = 'MIDDLE BB 20', linestyle = '--', linewidth = 1.2, color = 'grey')
+tsla['sma_20'].plot(label = 'MIDDLE BB 20', linestyle = '--', linewidth = 1.2, color = 'grey')
 tsla['lower_bb'].plot(label = 'LOWER BB 20', linestyle = '--', linewidth = 1, color = 'black')
 plt.legend(loc = 'upper left')
 plt.title('TSLA BOLLINGER BANDS')
@@ -86,7 +84,7 @@ def implement_bb_strategy(data, lower_bb, upper_bb):
     signal = 0
     
     for i in range(len(data)):
-        if data[i] < lower_bb[i] and data[i-1] > lower_bb[i-1]:
+        if data[i-1] > lower_bb[i-1] and data[i] < lower_bb[i]:
             if signal != 1:
                 buy_price.append(data[i])
                 sell_price.append(np.nan)
@@ -96,7 +94,7 @@ def implement_bb_strategy(data, lower_bb, upper_bb):
                 buy_price.append(np.nan)
                 sell_price.append(np.nan)
                 bb_signal.append(0)
-        elif data[i] > upper_bb[i] and data[i-1] < upper_bb[i-1]:
+        elif data[i-1] < upper_bb[i-1] and data[i] > upper_bb[i]:
             if signal != -1:
                 buy_price.append(np.nan)
                 sell_price.append(data[i])
@@ -117,7 +115,7 @@ buy_price, sell_price, bb_signal = implement_bb_strategy(tsla['close'], tsla['lo
 
 tsla['close'].plot(label = 'CLOSE PRICES', alpha = 0.3)
 tsla['upper_bb'].plot(label = 'UPPER BB', linestyle = '--', linewidth = 1, color = 'black')
-tsla['middle_bb'].plot(label = 'MIDDLE BB', linestyle = '--', linewidth = 1.2, color = 'grey')
+tsla['sma_20'].plot(label = 'MIDDLE BB', linestyle = '--', linewidth = 1.2, color = 'grey')
 tsla['lower_bb'].plot(label = 'LOWER BB', linestyle = '--', linewidth = 1, color = 'black')
 plt.scatter(tsla.index, buy_price, marker = '^', color = 'green', label = 'BUY', s = 200)
 plt.scatter(tsla.index, sell_price, marker = 'v', color = 'red', label = 'SELL', s = 200)
@@ -139,16 +137,18 @@ for i in range(len(tsla['close'])):
         position[i] = 0
     else:
         position[i] = position[i-1]
-
+        
 upper_bb = tsla['upper_bb']
-middle_bb = tsla['middle_bb'] 
-lower_bb = tsla['lower_bb'] 
+lower_bb = tsla['lower_bb']
+close_price = tsla['close']
 bb_signal = pd.DataFrame(bb_signal).rename(columns = {0:'bb_signal'}).set_index(tsla.index)
 position = pd.DataFrame(position).rename(columns = {0:'bb_position'}).set_index(tsla.index)
 
-frames = [upper_bb, middle_bb, lower_bb, bb_signal, position]
+frames = [close_price, upper_bb, lower_bb, bb_signal, position]
 strategy = pd.concat(frames, join = 'inner', axis = 1)
 strategy = strategy.reset_index().drop('date', axis = 1)
+
+print(strategy.tail(7))
 
 tsla_ret = pd.DataFrame(np.diff(tsla['close'])).rename(columns = {0:'returns'})
 bb_strategy_ret = []
