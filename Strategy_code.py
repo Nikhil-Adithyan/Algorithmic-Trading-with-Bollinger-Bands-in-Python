@@ -36,6 +36,12 @@ def get_historic_data(symbol):
     df = pd.concat(frames, axis = 1, join = 'inner')
     return df
 
+tsla = get_historic_data('TSLA')
+tsla = tsla.set_index('date')
+tsla.index = pd.to_datetime(tsla.index)
+tsla = tsla[tsla.index >= '2020-01-01']
+tsla.to_csv('tsla.csv')
+
 tsla = pd.read_csv('tsla.csv').set_index('date')
 tsla.index = pd.to_datetime(tsla.index)
 print(tsla.tail())
